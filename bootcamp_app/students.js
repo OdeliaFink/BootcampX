@@ -1,4 +1,3 @@
-//connect to our database
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -8,16 +7,24 @@ const pool = new Pool({
   database: 'bootcampx',
 });
 
+//1. create a querry replacing all incoming data as $(number=> starting at 1)
+const queryString = `
+  SELECT students.id as student_id, students.name as name, cohorts.name as cohort
+  FROM students
+  JOIN cohorts ON cohorts.id = cohort_id
+  WHERE cohorts.name LIKE $1
+  LIMIT $2;
+  `;
+
+//2. for each $(data) create variables
+const cohortName = process.argv[2];
+const limit = process.argv[3] || 5;
+//3. store the vulnerable data into one array
+const values = [`%${cohortName}%`, limit];
+
+//4. join querry and array of variables in the pool.querry
 pool
-  .query(
-    `
-SELECT students.id as student_id, students.name as name, cohorts.name as cohort
-FROM students
-JOIN cohorts ON cohorts.id = cohort_id
-WHERE cohorts.name LIKE '%${process.argv[2]}%'
-LIMIT ${process.argv[3] || 5};
-`
-  )
+  .query(queryString, values)
   .then((res) => {
     res.rows.forEach((user) => {
       console.log(
